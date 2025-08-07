@@ -274,6 +274,8 @@ function App() {
   const [activeTab, setActiveTab] = useState<'image' | 'symptoms'>('image');
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [showDatabaseStatus, setShowDatabaseStatus] = useState(false);
+  const [showSystemInfo, setShowSystemInfo] = useState(false);
+  const [showDemoInfo, setShowDemoInfo] = useState(false);
   const [showHospitalMap, setShowHospitalMap] = useState(false);
   const [usedQuestions, setUsedQuestions] = useState<Set<string>>(new Set()); // 使用済み質問を追跡
   const [showUploadOptions, setShowUploadOptions] = useState(false); // アップロード選択肢の表示状態
@@ -631,17 +633,23 @@ function App() {
                 <Activity className="w-5 h-5 text-blue-600" />
                 <span className="font-medium">{t.databaseStatus}</span>
               </button>
-              <div className="flex items-center space-x-2 text-sm text-gray-600 bg-yellow-50 px-3 py-2 rounded-lg border border-yellow-200">
-                <AlertTriangle className="w-4 h-4 text-yellow-600" />
-                <span className="font-medium">{t.diagnosticTool}</span>
-                <span className="text-gray-500">-</span>
+              <button
+                onClick={() => setShowSystemInfo(true)}
+                className="w-12 h-12 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg border border-blue-200 flex items-center justify-center transition-colors"
+                title="診断支援ツール情報"
+              >
+                <Stethoscope className="w-6 h-6" />
+              </button>
                 <span>{t.finalDecisionByDoctor}</span>
               </div>
               {!isConfigured && (
-                <div className="flex items-center gap-2 bg-blue-50 text-blue-800 px-3 py-1 rounded-lg text-sm">
-                  <AlertTriangle className="w-4 h-4" />
-                  <span>{t.demoMode}</span>
-                </div>
+                <button
+                  onClick={() => setShowDemoInfo(true)}
+                  className="w-12 h-12 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded-lg border border-yellow-200 flex items-center justify-center transition-colors"
+                  title="デモモード情報"
+                >
+                  <AlertCircle className="w-6 h-6" />
+                </button>
               )}
             </div>
           </div>
@@ -1029,6 +1037,62 @@ function App() {
             </div>
           </div>
         )}
+
+        {/* システム情報モーダル */}
+        {showSystemInfo && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+                      <Stethoscope className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-800">DermaAI診断支援システム</h3>
+                      <p className="text-sm text-gray-500">AI皮膚病変診断支援ツール</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowSystemInfo(false)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    title="閉じる"
+                  >
+                    <X className="w-4 h-4 text-gray-600" />
+                  </button>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
+                    <h4 className="text-lg font-bold text-blue-900 mb-4">システム概要</h4>
+                    <p className="text-blue-800 leading-relaxed mb-4">
+                      DermaAI診断支援システムは、AI技術を活用した皮膚疾患の診断支援ツールです。
+                      症状の入力や画像解析により、可能性の高い皮膚疾患を提示し、医療従事者の診断をサポートします。
+                    </p>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="bg-green-50 rounded-xl p-4 border border-green-200">
+                      <h5 className="font-bold text-green-900 mb-3">主な機能</h5>
+                      <ul className="space-y-2 text-sm text-green-800">
+                        <li className="flex items-center">
+                          <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                          症状ベース診断
+                        </li>
+                        <li className="flex items-center">
+                          <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                          画像解析診断
+                        </li>
+                        <li className="flex items-center">
+                          <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                          治療法提案
+                        </li>
+                        <li className="flex items-center">
+                          <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                          病院検索
+                        </li>
+                      </ul>
+                    </div>
       </div>
 
       {/* 詳細情報モーダル */}
