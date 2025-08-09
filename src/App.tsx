@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Upload, Camera, AlertTriangle, Info, MessageCircle, Eye, FileImage, RotateCcw, Database, Activity, MapPin, Globe, Check, ChevronDown } from 'lucide-react';
+import { Upload, Camera, AlertTriangle, Info, MessageCircle, Eye, FileImage, RotateCcw, Database, Activity, MapPin, Globe, Check, ChevronDown, X, AlertCircle, Stethoscope } from 'lucide-react';
 import SymptomSelector from './components/SymptomSelector';
 import DiagnosisResults from './components/DiagnosisResults';
 import DatabaseStatus from './components/DatabaseStatus';
@@ -640,6 +640,8 @@ function App() {
               >
                 <Stethoscope className="w-6 h-6" />
               </button>
+              <div className="flex items-center space-x-2 px-3 py-2 bg-yellow-100 text-yellow-800 rounded-lg border border-yellow-200 text-xs">
+                <AlertTriangle className="w-4 h-4" />
                 <span>{t.finalDecisionByDoctor}</span>
               </div>
               {!isConfigured && (
@@ -653,6 +655,7 @@ function App() {
               )}
             </div>
           </div>
+        </div>
       </header>
 
       {/* タブナビゲーション */}
@@ -1092,6 +1095,12 @@ function App() {
                         </li>
                       </ul>
                     </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 詳細情報モーダル */}
