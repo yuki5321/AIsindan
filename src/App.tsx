@@ -1174,4 +1174,4 @@ function App() {
                 </div>
 
                 {/* 治療法 */}
-                <div className
+                <div className="bg-green-50 rounded-xl p-6 border border-green-200"
