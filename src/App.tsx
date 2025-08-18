@@ -572,7 +572,7 @@ function App() {
                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full shadow-lg animate-pulse"></div>
               </div>
               <div>
-                <h1 className="text-2xl font-black bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-700 bg-clip-text text-transparent tracking-tight leading-tight">
+                <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-700 bg-clip-text text-transparent tracking-tight leading-tight">
                   DermaAI診断支援システム
                 </h1>
                 <div className="flex items-center mt-1 space-x-2">
@@ -1174,90 +1174,4 @@ function App() {
                 </div>
 
                 {/* 治療法 */}
-                <div className="bg-green-50 rounded-xl p-6 border border-green-200">
-                  <h3 className="text-lg font-bold text-green-900 mb-4 flex items-center">
-                    <div className="w-6 h-6 bg-green-600 rounded-md flex items-center justify-center mr-3">
-                      <Camera className="w-4 h-4 text-white" />
-                    </div>
-                    治療法
-                  </h3>
-                  <ul className="space-y-3">
-                    {conditionDetails[selectedCondition].treatments.map((treatment, index) => (
-                      <li key={index} className="flex items-center text-green-800">
-                        <div className="w-2 h-2 bg-green-500 rounded-full mr-4 flex-shrink-0"></div>
-                        <span className="text-sm font-medium">{treatment}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* 予防・対策 */}
-                <div className="bg-purple-50 rounded-xl p-6 border border-purple-200">
-                  <h3 className="text-lg font-bold text-purple-900 mb-4 flex items-center">
-                    <div className="w-6 h-6 bg-purple-600 rounded-md flex items-center justify-center mr-3">
-                      <Eye className="w-4 h-4 text-white" />
-                    </div>
-                    予防・対策
-                  </h3>
-                  <ul className="space-y-3">
-                    {conditionDetails[selectedCondition].prevention.map((prevention, index) => (
-                      <li key={index} className="flex items-center text-purple-800">
-                        <div className="w-2 h-2 bg-purple-500 rounded-full mr-4 flex-shrink-0"></div>
-                        <span className="text-sm font-medium">{prevention}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-
-              {/* 予後 */}
-              <div className="bg-indigo-50 rounded-xl p-6 border border-indigo-200">
-                <h3 className="text-lg font-bold text-indigo-900 mb-4 flex items-center">
-                  <div className="w-6 h-6 bg-indigo-600 rounded-md flex items-center justify-center mr-3">
-                    <Info className="w-4 h-4 text-white" />
-                  </div>
-                  予後・見通し
-                </h3>
-                <p className="text-indigo-800 leading-relaxed text-base font-medium">
-                  {conditionDetails[selectedCondition].prognosis}
-                </p>
-              </div>
-
-              {/* 注意事項 */}
-              <div className="bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-200 rounded-xl p-6">
-                <div className="flex items-start">
-                  <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
-                    <AlertTriangle className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="text-sm text-orange-800">
-                    <p className="font-bold mb-2 text-base">医療専門家への相談を推奨</p>
-                    <p className="leading-relaxed">
-                      この情報は診断支援目的のものです。症状が続く場合や悪化する場合は、必ず皮膚科専門医にご相談ください。
-                      自己判断による治療は症状を悪化させる可能性があります。
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Database Status Modal */}
-      {showDatabaseStatus && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-            <DatabaseStatus onClose={() => setShowDatabaseStatus(false)} />
-          </div>
-        </div>
-      )}
-
-      {/* Hospital Map Modal */}
-      {showHospitalMap && (
-        <HospitalMap onClose={() => setShowHospitalMap(false)} />
-      )}
-    </div>
-  );
-}
-
-export default App;
+                <div className
