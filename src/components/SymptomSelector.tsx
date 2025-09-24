@@ -105,8 +105,6 @@ export default function SymptomSelector({ selectedSymptoms, onSymptomsChange, on
   const isConfigured = isSupabaseConfigured();
   const t = translations[currentLanguage];
 
-  // removed misplaced import of useCallback
-
   const loadSymptoms = useCallback(async () => {
     try {
       setLoading(true);

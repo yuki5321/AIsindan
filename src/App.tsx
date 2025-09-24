@@ -3,7 +3,6 @@ import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { 
   Globe, 
   MapPin, 
-  Database, 
   Stethoscope, 
   User,
   LogIn, LogOut
@@ -21,7 +20,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 // Other Components
 import HospitalMap from './components/HospitalMap';
-import DatabaseStatus from './components/DatabaseStatus';
 
 // Auth
 import { useAuth } from './contexts/AuthContext';
@@ -33,7 +31,6 @@ function App() {
   const [currentLanguage, setCurrentLanguage] = useState<'ja' | 'en' | 'ko' | 'zh'>('ja');
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [showHospitalMap, setShowHospitalMap] = useState(false);
-  const [showDatabaseStatus, setShowDatabaseStatus] = useState(false);
 
   const languages = [
     { code: 'ja', name: '日本語', flag: '🇯🇵' },
@@ -74,6 +71,7 @@ function App() {
                 <button
                   onClick={() => setShowLanguageMenu(!showLanguageMenu)}
                   className="w-12 h-12 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors"
+                  title="言語設定"
                 >
                   <Globe className="w-6 h-6 text-gray-600" />
                 </button>
@@ -99,30 +97,23 @@ function App() {
               <button
                 onClick={() => setShowHospitalMap(!showHospitalMap)}
                 className="w-12 h-12 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors"
+                title="近くの病院を探す"
               >
                 <MapPin className="w-6 h-6 text-gray-600" />
-              </button>
-
-              {/* DB Status */}
-              <button
-                onClick={() => setShowDatabaseStatus(!showDatabaseStatus)}
-                className="w-12 h-12 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors"
-              >
-                <Database className="w-6 h-6 text-gray-600" />
               </button>
 
               {/* Auth buttons */}
               {user ? (
                 <>
-                  <Link to="/account" className="w-12 h-12 bg-blue-100 hover:bg-blue-200 rounded-lg flex items-center justify-center transition-colors">
+                  <Link to="/account" className="w-12 h-12 bg-blue-100 hover:bg-blue-200 rounded-lg flex items-center justify-center transition-colors" title="アカウント情報">
                     <User className="w-6 h-6 text-blue-600" />
                   </Link>
-                  <button onClick={logout} className="w-12 h-12 bg-red-100 hover:bg-red-200 rounded-lg flex items-center justify-center transition-colors">
+                  <button onClick={logout} className="w-12 h-12 bg-red-100 hover:bg-red-200 rounded-lg flex items-center justify-center transition-colors" title="ログアウト">
                     <LogOut className="w-6 h-6 text-red-600" />
                   </button>
                 </>
               ) : (
-                <Link to="/login" className="w-12 h-12 bg-green-100 hover:bg-green-200 rounded-lg flex items-center justify-center transition-colors">
+                <Link to="/login" className="w-12 h-12 bg-green-100 hover:bg-green-200 rounded-lg flex items-center justify-center transition-colors" title="ログイン">
                   <LogIn className="w-6 h-6 text-green-600" />
                 </Link>
               )}
@@ -172,13 +163,6 @@ function App() {
 
       {/* Modals */}
       {showHospitalMap && <HospitalMap onClose={() => setShowHospitalMap(false)} />}
-      {showDatabaseStatus && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
-            <DatabaseStatus onClose={() => setShowDatabaseStatus(false)} />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

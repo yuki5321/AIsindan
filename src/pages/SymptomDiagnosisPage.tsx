@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import SymptomSelector from '../components/SymptomSelector';
 import DiagnosisResults from '../components/DiagnosisResults';
 
+// 症状の型定義を追加
+
 export default function SymptomDiagnosisPage() {
+  // string[] に戻す（SymptomSelectorがstring[]を期待しているため）
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [diagnosisStarted, setDiagnosisStarted] = useState(false);
   const currentLanguage = 'ja'; // Or get from a context
