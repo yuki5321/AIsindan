@@ -71,3 +71,15 @@ export const deleteDiaryRecord = async (recordId: string) => {
 
   if (error) throw error;
 };
+
+// Update an existing diary record
+export const updateDiaryRecord = async (recordId: string, updates: Partial<Omit<DiaryRecord, 'id' | 'user_id'>>) => {
+  const { data, error } = await supabase
+    .from('diary_records')
+    .update(updates)
+    .eq('id', recordId)
+    .select();
+  
+  if (error) throw error;
+  return data[0];
+};

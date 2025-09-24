@@ -1,31 +1,41 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { getDiaryRecords, addDiaryRecord, deleteDiaryRecord, DiaryRecord } from '../services/diaryService';
+import { getDiaryRecords, addDiaryRecord, deleteDiaryRecord, updateDiaryRecord, DiaryRecord } from '../services/diaryService';
 import Calendar from '../components/Calendar';
-import { Plus, Trash2, X } from 'lucide-react';
+import { Plus, Trash2, X, Edit } from 'lucide-react';
 
-// Add Record Modal Component
-const AddRecordModal = ({ date, onClose, onSave }: {
+// This modal is now used for both adding and editing
+const RecordModal = ({ 
+  recordToEdit, 
+  date, 
+  onClose, 
+  onSave 
+}: {
+  recordToEdit: DiaryRecord | null;
   date: Date;
   onClose: () => void;
   onSave: () => void;
 }) => {
-  const [memo, setMemo] = useState('');
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [memo, setMemo] = useState(recordToEdit?.memo || '');
   const [isSaving, setIsSaving] = useState(false);
+  const isEditMode = !!recordToEdit;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     try {
-      const record: Omit<DiaryRecord, 'user_id'> = {
-        record_date: date.toISOString().split('T')[0],
-        memo: memo,
-      };
-      await addDiaryRecord(record, imageFile || undefined);
-      onSave(); // Refresh the list
+      if (isEditMode) {
+        await updateDiaryRecord(recordToEdit.id!, { memo });
+      } else {
+        const newRecord: Omit<DiaryRecord, 'user_id' | 'id'> = {
+          record_date: date.toISOString().split('T')[0],
+          memo: memo,
+        };
+        // Note: Image upload is disabled in edit mode for simplicity
+        await addDiaryRecord(newRecord);
+      }
+      onSave();
     } catch (error) {
       console.error("Failed to save record:", error);
-      // Here you could show an error message inside the modal
     } finally {
       setIsSaving(false);
     }
@@ -35,7 +45,7 @@ const AddRecordModal = ({ date, onClose, onSave }: {
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl p-8">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-bold">記録を追加</h3>
+          <h3 className="text-xl font-bold">{isEditMode ? '記録を編集' : '記録を追加'}</h3>
           <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100">
             <X className="w-6 h-6 text-gray-600" />
           </button>
@@ -50,10 +60,13 @@ const AddRecordModal = ({ date, onClose, onSave }: {
               <label htmlFor="memo" className="block text-sm font-medium text-gray-700 mb-1">メモ</label>
               <textarea id="memo" value={memo} onChange={(e) => setMemo(e.target.value)} rows={4} className="w-full p-2 border rounded-md" />
             </div>
-            <div>
-              <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-1">画像</label>
-              <input id="image" type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files ? e.target.files[0] : null)} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
-            </div>
+            {!isEditMode && (
+              <div>
+                <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-1">画像</label>
+                <input id="image" type="file" accept="image/*" disabled className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-50 file:text-gray-700"/>
+                <p className="text-xs text-gray-500 mt-1">画像アップロードは現在新規作成時のみ対応しています。</p>
+              </div>
+            )}
           </div>
           <div className="mt-8 flex justify-end space-x-4">
             <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 font-medium">キャンセル</button>
@@ -74,7 +87,9 @@ export default function DiaryPage() {
   
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [recordToEdit, setRecordToEdit] = useState<DiaryRecord | null>(null);
+
+  const isModalOpen = !!recordToEdit;
 
   const fetchRecords = async () => {
     try {
@@ -101,6 +116,19 @@ export default function DiaryPage() {
         console.error("Failed to delete record:", error);
       }
     }
+  };
+
+  const handleOpenModal = (record: DiaryRecord | null = null) => {
+    setRecordToEdit(record || { record_date: selectedDate.toISOString().split('T')[0] } as DiaryRecord);
+  };
+
+  const handleCloseModal = () => {
+    setRecordToEdit(null);
+  };
+
+  const handleSave = () => {
+    handleCloseModal();
+    fetchRecords();
   };
 
   const recordsForSelectedDate = useMemo(() => {
@@ -130,7 +158,7 @@ export default function DiaryPage() {
               <h3 className="text-lg font-semibold">
                 {selectedDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })} の記録
               </h3>
-              <button onClick={() => setIsModalOpen(true)} className="flex items-center px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors">
+              <button onClick={() => handleOpenModal()} className="flex items-center px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors">
                 <Plus className="w-5 h-5 mr-2" />
                 記録を追加
               </button>
@@ -141,7 +169,10 @@ export default function DiaryPage() {
                   <div key={record.id} className="bg-white p-4 rounded-lg shadow-md border">
                     {record.image_url && <img src={record.image_url} alt="Diary entry" className="rounded-md mb-3 w-full"/>}
                     <p className="text-gray-700 whitespace-pre-wrap">{record.memo}</p>
-                    <div className="text-right mt-2">
+                    <div className="text-right mt-2 space-x-2">
+                      <button onClick={() => handleOpenModal(record)} className="p-2 rounded-full hover:bg-gray-100">
+                        <Edit className="w-5 h-5 text-gray-600" />
+                      </button>
                       <button onClick={() => handleDelete(record.id!)} className="p-2 rounded-full hover:bg-red-100">
                         <Trash2 className="w-5 h-5 text-red-500" />
                       </button>
@@ -160,13 +191,11 @@ export default function DiaryPage() {
       )}
 
       {isModalOpen && (
-        <AddRecordModal 
+        <RecordModal 
+          recordToEdit={recordToEdit}
           date={selectedDate} 
-          onClose={() => setIsModalOpen(false)} 
-          onSave={() => {
-            setIsModalOpen(false);
-            fetchRecords();
-          }}
+          onClose={handleCloseModal} 
+          onSave={handleSave}
         />
       )}
     </div>

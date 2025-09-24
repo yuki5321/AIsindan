@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Search, X, Plus, AlertCircle } from 'lucide-react';
 import { diseaseService } from '../services/diseaseService';
 import { isSupabaseConfigured } from '../lib/supabase';
@@ -105,7 +105,9 @@ export default function SymptomSelector({ selectedSymptoms, onSymptomsChange, on
   const isConfigured = isSupabaseConfigured();
   const t = translations[currentLanguage];
 
-  const loadSymptoms = async () => {
+  // removed misplaced import of useCallback
+
+  const loadSymptoms = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -123,11 +125,11 @@ export default function SymptomSelector({ selectedSymptoms, onSymptomsChange, on
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedCategory]);
 
   useEffect(() => {
     loadSymptoms();
-  }, [selectedCategory]);
+  }, [selectedCategory, loadSymptoms]);
 
   const filteredSymptoms = useMemo(() => {
     if (!searchQuery.trim()) return symptoms;
@@ -154,7 +156,7 @@ export default function SymptomSelector({ selectedSymptoms, onSymptomsChange, on
   const getSelectedSymptomNames = () => {
     return selectedSymptoms.map(id => {
       const symptom = symptoms.find(s => s.id === id);
-      return symptom ? symptom.name : id;
+      return symptom ? (currentLanguage === 'ja' ? symptom.name : symptom.name_en) : id;
     });
   };
 
@@ -189,7 +191,7 @@ export default function SymptomSelector({ selectedSymptoms, onSymptomsChange, on
         <h2 className="text-2xl font-bold text-gray-900">{t.selectSymptoms}</h2>
         {selectedSymptoms.length > 0 && (
           <button
-            onClick={onDiagnose}
+            onClick={onSubmit}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
@@ -328,7 +330,7 @@ export default function SymptomSelector({ selectedSymptoms, onSymptomsChange, on
       {selectedSymptoms.length > 0 && (
         <div className="mt-6 pt-4 border-t border-gray-200">
           <button
-            onClick={onDiagnose}
+            onClick={onSubmit}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center gap-2"
           >
             <Plus className="w-5 h-5" />

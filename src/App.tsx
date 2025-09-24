@@ -1,12 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { 
   Globe, 
   MapPin, 
   Database, 
   Stethoscope, 
-  AlertTriangle,
-  X,
   User,
   LogIn, LogOut
 } from 'lucide-react';
@@ -84,7 +82,7 @@ function App() {
                     {languages.map((lang) => (
                       <button
                         key={lang.code}
-                        onClick={() => handleLanguageChange(lang.code as any)}
+                        onClick={() => handleLanguageChange(lang.code as 'ja' | 'en' | 'ko' | 'zh')}
                         className={`w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center space-x-3 ${
                           currentLanguage === lang.code ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
                         }`}
@@ -140,11 +138,11 @@ function App() {
             <Link to="/" className={`py-4 px-1 border-b-2 font-medium text-sm transition-all duration-300 ${getNavClass('/')}`}>
               ホーム
             </Link>
-            <Link to="/symptom-diagnosis" className={`py-4 px-1 border-b-2 font-medium text-sm transition-all duration-300 ${getNavClass('/symptom-diagnosis')}`}>
-              症状診断
-            </Link>
             <Link to="/image-diagnosis" className={`py-4 px-1 border-b-2 font-medium text-sm transition-all duration-300 ${getNavClass('/image-diagnosis')}`}>
               画像診断
+            </Link>
+            <Link to="/symptom-diagnosis" className={`py-4 px-1 border-b-2 font-medium text-sm transition-all duration-300 ${getNavClass('/symptom-diagnosis')}`}>
+              症状診断
             </Link>
             {user && (
               <Link to="/diary" className={`py-4 px-1 border-b-2 font-medium text-sm transition-all duration-300 ${getNavClass('/diary')}`}>
