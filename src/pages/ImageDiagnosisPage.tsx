@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Upload, FileImage, Sparkles, MessageSquare, BrainCircuit } from 'lucide-react';
+import { Camera, Upload, FileImage, Sparkles, MessageSquare, BrainCircuit, ChevronRight } from 'lucide-react';
 import CameraModal from '../components/CameraModal';
 import SymptomSelector from '../components/SymptomSelector';
 import { diseaseService } from '../services/diseaseService';
 import DiseaseDetailModal from '../components/DiseaseDetailModal';
+import DiagnosisResultCard from '../components/DiagnosisResultCard';
 
 interface Symptom {
   id: string;
@@ -45,6 +46,13 @@ export default function ImageDiagnosisPage() {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleCapture = (imageSrc: string) => {
+    setImage(imageSrc);
+    setDiagnosisResult(null);
+    setOriginalDiagnosisResult(null);
+    setShowCamera(false);
   };
 
   const handleDiagnose = async () => {
@@ -108,7 +116,67 @@ export default function ImageDiagnosisPage() {
 
   return (
     <div className="space-y-8">
-      {/* ... (Image Upload Section) ... */}
+      {/* Start: Image Upload Section */}
+      <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8">
+        <div className="grid md:grid-cols-2 gap-8 items-center">
+          {/* Image Preview and Upload Area */}
+          <div className="w-full aspect-square bg-gray-100 rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 relative overflow-hidden">
+            {image ? (
+              <img src={image} alt="Uploaded skin condition" className="object-contain w-full h-full" />
+            ) : (
+              <div className="text-center p-8">
+                <FileImage className="mx-auto h-16 w-16 text-gray-400" />
+                <h3 className="mt-4 text-lg font-medium text-gray-700">画像をアップロード</h3>
+                <p className="mt-1 text-sm text-gray-500">診断したい皮膚の画像をここに表示します。</p>
+              </div>
+            )}
+          </div>
+
+          {/* Controls */}
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-3xl font-bold text-gray-900">画像診断</h2>
+              <p className="mt-2 text-gray-600">AIを使用して皮膚の状態を分析します。画像をアップロードするか、カメラで撮影してください。</p>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <label htmlFor="file-upload" className="cursor-pointer bg-white hover:bg-gray-50 text-blue-600 font-semibold py-3 px-4 border border-gray-300 rounded-lg shadow-sm flex items-center justify-center transition-colors">
+                <Upload className="w-5 h-5 mr-2" />
+                ファイルを選択
+              </label>
+              <input id="file-upload" name="file-upload" type="file" className="sr-only" accept="image/*" onChange={handleFileChange} />
+              
+              <button
+                type="button"
+                onClick={() => setShowCamera(true)}
+                className="bg-white hover:bg-gray-50 text-blue-600 font-semibold py-3 px-4 border border-gray-300 rounded-lg shadow-sm flex items-center justify-center transition-colors"
+              >
+                <Camera className="w-5 h-5 mr-2" />
+                カメラで撮影
+              </button>
+            </div>
+
+            <button
+              onClick={handleDiagnose}
+              disabled={!image || isLoading}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-bold py-4 px-4 rounded-lg shadow-lg flex items-center justify-center transition-all duration-300 transform hover:scale-105 disabled:scale-100"
+            >
+              {isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                  <span>診断中...</span>
+                </> 
+              ) : (
+                <>
+                  <Sparkles className="w-5 h-5 mr-2" />
+                  <span>AI診断を開始</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+      {/* End: Image Upload Section */}
 
       {diagnosisResult && (
         <div ref={resultsRef} className="flex flex-col md:flex-row md:space-x-8 space-y-8 md:space-y-0">
@@ -117,19 +185,30 @@ export default function ImageDiagnosisPage() {
               <h2 className="text-2xl font-bold text-gray-900 mb-6">診断候補 (信頼度順)</h2>
               <div className="space-y-4">
                 {diagnosisResult.map((result, index) => (
-                  <div 
+                  <DiagnosisResultCard 
                     key={result?.disease?.id || index} 
-                    className="border border-gray-200 rounded-xl p-5 hover:bg-blue-50/50 hover:border-blue-300 transition-all duration-300 cursor-pointer transform hover:-translate-y-1 hover:shadow-lg"
+                    result={result} 
                     onClick={() => result?.disease && handleOpenModal(result.disease)}
-                  >
-                    {/* ... (Card content) ... */}
-                  </div>
+                  />
                 ))}
               </div>
             </div>
           </div>
 
-          {/* ... (Symptom Interaction Section) ... */}
+          {/* Start: Symptom Interaction Section */}
+          <div className="w-full md:w-2/5">
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8 h-full">
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">症状で絞り込む</h3>
+              <p className="text-sm text-gray-600 mb-6">画像診断の結果を、自覚症状を追加してさらに絞り込みます。</p>
+              <SymptomSelector
+                selectedSymptoms={selectedSymptomIds}
+                onSymptomsChange={setSelectedSymptomIds}
+                onSubmit={handleRefineDiagnosis}
+                currentLanguage={'ja'}
+              />
+            </div>
+          </div>
+          {/* End: Symptom Interaction Section */}
         </div>
       )}
 
@@ -141,7 +220,12 @@ export default function ImageDiagnosisPage() {
         />
       )}
 
-      {/* ... (Camera Modal) ... */}
+      {showCamera && (
+        <CameraModal 
+          onCapture={handleCapture}
+          onClose={() => setShowCamera(false)}
+        />
+      )}
     </div>
   );
 }

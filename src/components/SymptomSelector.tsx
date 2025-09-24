@@ -134,11 +134,11 @@ export default function SymptomSelector({ selectedSymptoms, onSymptomsChange, on
     
     const query = searchQuery.toLowerCase();
     return symptoms.filter(symptom => 
-      symptom.name.toLowerCase().includes(query) ||
-      symptom.name_en.toLowerCase().includes(query) ||
-      symptom.description.toLowerCase().includes(query) ||
+      (symptom.name?.toLowerCase() ?? '').includes(query) ||
+      (symptom.name_en?.toLowerCase() ?? '').includes(query) ||
+      (symptom.description?.toLowerCase() ?? '').includes(query) ||
       (symptom.search_keywords && symptom.search_keywords.some(keyword => 
-        keyword.toLowerCase().includes(query)
+        (keyword?.toLowerCase() ?? '').includes(query)
       ))
     );
   }, [symptoms, searchQuery]);

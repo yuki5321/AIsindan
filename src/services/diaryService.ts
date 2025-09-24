@@ -1,5 +1,12 @@
 import { supabase } from '../lib/supabase';
 
+// Helper to convert data URL to Blob
+const dataUrlToBlob = async (dataUrl: string) => {
+  const res = await fetch(dataUrl);
+  const blob = await res.blob();
+  return blob;
+};
+
 export interface DiaryRecord {
   id?: string;
   user_id: string;
@@ -23,26 +30,30 @@ export const getDiaryRecords = async () => {
   return data;
 };
 
-// Add a new diary record, including image upload
-export const addDiaryRecord = async (record: Omit<DiaryRecord, 'user_id'>, imageFile?: File) => {
+// Add a new diary record, including image upload from base64 string
+export const addDiaryRecord = async (record: Omit<DiaryRecord, 'user_id' | 'id'>, imageBase64?: string | null) => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not logged in');
 
   let imageUrl: string | undefined = undefined;
 
   // 1. Upload image if it exists
-  if (imageFile) {
-    const fileName = `${user.id}/${Date.now()}_${imageFile.name}`;
+  if (imageBase64) {
+    const imageBlob = await dataUrlToBlob(imageBase64);
+    const fileExt = imageBlob.type.split('/')[1] || 'jpg';
+    const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+    
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('diary-images') // Assumes a bucket named 'diary-images'
-      .upload(fileName, imageFile);
+      .upload(fileName, imageBlob, { contentType: imageBlob.type });
 
     if (uploadError) throw uploadError;
 
     // 2. Get the public URL of the uploaded image
     const { data: urlData } = supabase.storage
       .from('diary-images')
-      .getPublicUrl(uploadData.path);
+      .getPublicUrl(fileName);
+      
     imageUrl = urlData.publicUrl;
   }
 

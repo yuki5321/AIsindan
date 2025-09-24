@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { getDiaryRecords, addDiaryRecord, deleteDiaryRecord, updateDiaryRecord, DiaryRecord } from '../services/diaryService';
 import Calendar from '../components/Calendar';
-import { Plus, Trash2, X, Edit } from 'lucide-react';
+import CameraModal from '../components/CameraModal';
+import { Plus, Trash2, X, Edit, Camera, Upload, FileImage } from 'lucide-react';
 
 // This modal is now used for both adding and editing
 const RecordModal = ({ 
@@ -16,22 +17,41 @@ const RecordModal = ({
   onSave: () => void;
 }) => {
   const [memo, setMemo] = useState(recordToEdit?.memo || '');
+  const [image, setImage] = useState<string | null>(recordToEdit?.image_url || null);
+  const [showCamera, setShowCamera] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const isEditMode = !!recordToEdit;
+  const isEditMode = !!recordToEdit?.id;
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      const file = event.target.files[0];
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCapture = (imageSrc: string) => {
+    setImage(imageSrc);
+    setShowCamera(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     try {
       if (isEditMode) {
+        // Note: Image upload/change is not supported in edit mode for simplicity.
+        // A more advanced implementation would handle image deletion/replacement.
         await updateDiaryRecord(recordToEdit.id!, { memo });
       } else {
         const newRecord: Omit<DiaryRecord, 'user_id' | 'id'> = {
           record_date: date.toISOString().split('T')[0],
           memo: memo,
         };
-        // Note: Image upload is disabled in edit mode for simplicity
-        await addDiaryRecord(newRecord);
+        await addDiaryRecord(newRecord, image);
       }
       onSave();
     } catch (error) {
@@ -42,41 +62,74 @@ const RecordModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl p-8">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-bold">{isEditMode ? '記録を編集' : '記録を追加'}</h3>
-          <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100">
-            <X className="w-6 h-6 text-gray-600" />
-          </button>
-        </div>
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div>
-              <label className="font-medium">日付</label>
-              <p>{date.toLocaleDateString('ja-JP')}</p>
-            </div>
-            <div>
-              <label htmlFor="memo" className="block text-sm font-medium text-gray-700 mb-1">メモ</label>
-              <textarea id="memo" value={memo} onChange={(e) => setMemo(e.target.value)} rows={4} className="w-full p-2 border rounded-md" />
-            </div>
-            {!isEditMode && (
-              <div>
-                <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-1">画像</label>
-                <input id="image" type="file" accept="image/*" disabled className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-50 file:text-gray-700"/>
-                <p className="text-xs text-gray-500 mt-1">画像アップロードは現在新規作成時のみ対応しています。</p>
-              </div>
-            )}
-          </div>
-          <div className="mt-8 flex justify-end space-x-4">
-            <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 font-medium">キャンセル</button>
-            <button type="submit" disabled={isSaving} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium disabled:bg-blue-300">
-              {isSaving ? '保存中...' : '保存'}
+    <>
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl p-8">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-bold">{isEditMode ? '記録を編集' : '記録を追加'}</h3>
+            <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100">
+              <X className="w-6 h-6 text-gray-600" />
             </button>
           </div>
-        </form>
+          <form onSubmit={handleSubmit}>
+            <div className="space-y-4">
+              <div>
+                <label className="font-medium">日付</label>
+                <p>{date.toLocaleDateString('ja-JP')}</p>
+              </div>
+              
+              {/* Image Upload Section - only for new records */}
+              {!isEditMode && (
+                <div className="space-y-4">
+                  <div className="w-full aspect-video bg-gray-100 rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 relative overflow-hidden">
+                    {image ? (
+                      <img src={image} alt="Uploaded diary entry" className="object-contain w-full h-full" />
+                    ) : (
+                      <div className="text-center p-4">
+                        <FileImage className="mx-auto h-12 w-12 text-gray-400" />
+                        <h3 className="mt-2 text-sm font-medium text-gray-700">画像を追加</h3>
+                      </div>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <label htmlFor="diary-file-upload" className="cursor-pointer bg-white hover:bg-gray-50 text-blue-600 font-semibold py-2 px-4 border border-gray-300 rounded-lg flex items-center justify-center transition-colors text-sm">
+                      <Upload className="w-4 h-4 mr-2" />
+                      ファイルを選択
+                    </label>
+                    <input id="diary-file-upload" name="file-upload" type="file" className="sr-only" accept="image/*" onChange={handleFileChange} />
+                    <button
+                      type="button"
+                      onClick={() => setShowCamera(true)}
+                      className="bg-white hover:bg-gray-50 text-blue-600 font-semibold py-2 px-4 border border-gray-300 rounded-lg flex items-center justify-center transition-colors text-sm"
+                    >
+                      <Camera className="w-4 h-4 mr-2" />
+                      カメラで撮影
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="memo" className="block text-sm font-medium text-gray-700 mb-1">メモ</label>
+                <textarea id="memo" value={memo} onChange={(e) => setMemo(e.target.value)} rows={4} className="w-full p-2 border rounded-md" />
+              </div>
+            </div>
+            <div className="mt-8 flex justify-end space-x-4">
+              <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 font-medium">キャンセル</button>
+              <button type="submit" disabled={isSaving} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium disabled:bg-blue-300">
+                {isSaving ? '保存中...' : '保存'}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
+      {showCamera && (
+        <CameraModal 
+          onCapture={handleCapture}
+          onClose={() => setShowCamera(false)}
+        />
+      )}
+    </>
   );
 };
 

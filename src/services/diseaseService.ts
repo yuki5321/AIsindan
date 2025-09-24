@@ -59,7 +59,7 @@ export const diseaseService = {
 
     const { data: relations, error } = await supabase
       .from('disease_symptoms')
-      .select('relevance_score, disease:diseases(*, category:disease_categories(name))')
+      .select('relevance_score, symptom_id, disease:diseases(*, category:disease_categories(name))')
       .in('symptom_id', symptomIds);
 
     if (error) throw error;
@@ -77,7 +77,7 @@ export const diseaseService = {
 
     const results = Object.values(diseaseScores);
     const maxScore = Math.max(...results.map(r => r.totalScore), 1);
-    const formattedResults = results.map(r => ({ ...r, confidence: Math.min(Math.round((r.totalScore / maxScore) * 100), 100) }));
+    const formattedResults = results.map(r => ({ ...r, confidence: r.totalScore / maxScore }));
     
     return formattedResults.sort((a, b) => b.confidence - a.confidence);
   },

@@ -3,6 +3,7 @@ import { RotateCcw } from 'lucide-react';
 import { diseaseService } from '../services/diseaseService';
 import DiseaseDetailModal from './DiseaseDetailModal';
 import { Disease } from '../lib/supabase';
+import DiagnosisResultCard from './DiagnosisResultCard'; // Import the new component
 
 interface DiagnosisResultsProps {
   selectedSymptoms: string[];
@@ -75,17 +76,11 @@ const DiagnosisResults: React.FC<DiagnosisResultsProps> = ({ selectedSymptoms, o
         ) : (
           <div className="space-y-4">
             {results.map((result) => (
-              <div 
+              <DiagnosisResultCard 
                 key={result.disease.id}
-                className="border rounded-xl p-5 cursor-pointer hover:bg-blue-50"
+                result={result} 
                 onClick={() => handleOpenModal(result.disease)}
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-bold text-lg">{result.disease.name}</h3>
-                  <span className="font-bold text-lg">{result.confidence}%</span>
-                </div>
-                <p className="text-sm text-gray-700">{result.disease.overview}</p>
-              </div>
+              />
             ))}
           </div>
         )}
