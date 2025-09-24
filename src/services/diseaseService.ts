@@ -354,6 +354,37 @@ export class DiseaseService {
     }
   }
 
+  async diagnoseWithImage(imageFile: File) {
+    const reader = new FileReader();
+    reader.readAsDataURL(imageFile);
+    return new Promise((resolve, reject) => {
+      reader.onload = async () => {
+        try {
+          const response = await fetch('https://georgevibe123-derma-mnist-diagnosis.hf.space/run/predict', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data: [reader.result] }),
+          });
+
+          if (!response.ok) {
+            throw new Error('Image diagnosis failed');
+          }
+
+          const result = await response.json();
+          const predictions = result.data[0].label;
+          resolve(predictions);
+        } catch (error) {
+          console.error('画像診断エラー:', error);
+          reject(error);
+        }
+      };
+      reader.onerror = (error) => {
+        console.error('画像読み込みエラー:', error);
+        reject(error);
+      };
+    });
+  }
+
   // 検索機能
   async searchDiseases(query: string, category?: string, page: number = 1, limit: number = 20) {
     if (this.shouldUseMockData()) {

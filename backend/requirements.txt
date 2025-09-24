@@ -1,0 +1,14 @@
+medmnist
+numpy
+Pillow
+tensorflow
+Flask
+Flask-Cors
+gradio
+huggingface-hub
+pandas
+datasets
+google-cloud-storage
+scikit-learn
+supabase
+python-dotenv

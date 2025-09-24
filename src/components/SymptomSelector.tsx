@@ -23,7 +23,7 @@ interface SymptomCategory {
 interface SymptomSelectorProps {
   selectedSymptoms: string[];
   onSymptomsChange: (symptoms: string[]) => void;
-  onDiagnose: () => void;
+  onSubmit: () => void; // Renamed from onDiagnose
   currentLanguage: 'ja' | 'en' | 'ko' | 'zh';
 }
 
@@ -94,7 +94,7 @@ const translations = {
   }
 };
 
-export default function SymptomSelector({ selectedSymptoms, onSymptomsChange, onDiagnose, currentLanguage }: SymptomSelectorProps) {
+export default function SymptomSelector({ selectedSymptoms, onSymptomsChange, onSubmit, currentLanguage }: SymptomSelectorProps) {
   const [symptoms, setSymptoms] = useState<Symptom[]>([]);
   const [categories, setCategories] = useState<SymptomCategory[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
