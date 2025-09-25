@@ -1,28 +1,17 @@
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_KEY;
 
-// Validate URL format
-function isValidUrl(url: string): boolean {
-  try {
-    new URL(url);
-    return true;
-  } catch {
-    return false;
-  }
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.warn('Supabase URL or Key is not set. Running in demo mode.');
 }
 
-// Validate environment variables and provide fallback
-if (!supabaseUrl || !supabaseAnonKey || supabaseUrl === 'undefined' || supabaseAnonKey === 'undefined') {
-  console.warn('Supabase環境変数が設定されていません。右上の「Connect to Supabase」ボタンをクリックしてください。');
-}
+export const supabase = createClient(supabaseUrl!, supabaseAnonKey!);
 
-// Create client with fallback values to prevent initialization errors
-const validUrl = supabaseUrl && supabaseUrl !== 'undefined' && isValidUrl(supabaseUrl) ? supabaseUrl : 'https://placeholder.supabase.co';
-const validKey = supabaseAnonKey && supabaseAnonKey !== 'undefined' ? supabaseAnonKey : 'placeholder-key';
-
-export const supabase = createClient(validUrl, validKey);
+export const isSupabaseConfigured = () => {
+  return !!supabaseUrl && !!supabaseAnonKey;
+};
 
 // 拡張されたデータベース型定義
 export interface DiseaseCategory {

@@ -12,6 +12,8 @@ interface Symptom {
   name_en: string;
 }
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+
 export default function ImageDiagnosisPage() {
   const [image, setImage] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
@@ -62,7 +64,7 @@ export default function ImageDiagnosisPage() {
     setOriginalDiagnosisResult(null);
 
     try {
-      const response = await fetch('http://127.0.0.1:5000/predict_image', {
+      const response = await fetch(`${API_URL}/predict_image`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image: image }),
@@ -90,10 +92,10 @@ export default function ImageDiagnosisPage() {
 
     setIsRefining(true);
     try {
-      const response = await fetch('http://127.0.0.1:5000/refine_diagnosis', {
+      const response = await fetch(`${API_URL}/refine_diagnosis`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           initial_results: originalDiagnosisResult,
           symptoms: selectedSymptomNames 
         }),
@@ -165,7 +167,7 @@ export default function ImageDiagnosisPage() {
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
                   <span>診断中...</span>
-                </> 
+                </>
               ) : (
                 <>
                   <Sparkles className="w-5 h-5 mr-2" />

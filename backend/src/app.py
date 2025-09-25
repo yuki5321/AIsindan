@@ -15,7 +15,10 @@ dotenv_path = os.path.join(os.path.dirname(__file__), '..', '..', '.env')
 load_dotenv(dotenv_path=dotenv_path)
 
 app = Flask(__name__)
-CORS(app)
+
+# Allow requests from the frontend URL, with a fallback for local development
+frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:5173")
+CORS(app, resources={r"/*": {"origins": [frontend_url]}})
 
 # Supabase client initialization
 supabase_url = os.environ.get("SUPABASE_URL")
