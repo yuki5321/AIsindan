@@ -69,6 +69,14 @@ def load_disease_symptom_map():
 def index():
     return "Derma-MNIST Image Diagnosis API is running!"
 
+@app.route('/health')
+def health():
+    return jsonify({
+        'status': 'healthy',
+        'message': 'Derma-MNIST Image Diagnosis API is running!',
+        'endpoints': ['/predict_image', '/refine_diagnosis']
+    })
+
 @app.route('/predict_image', methods=['POST'])
 def predict_image():
     data = request.get_json()
@@ -152,4 +160,6 @@ def refine_diagnosis():
 
 if __name__ == '__main__':
     load_disease_symptom_map()
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get('PORT', 5000))
+    debug = os.environ.get('FLASK_ENV') == 'development'
+    app.run(debug=debug, host='0.0.0.0', port=port)

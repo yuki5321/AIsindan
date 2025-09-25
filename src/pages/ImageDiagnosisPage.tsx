@@ -12,7 +12,8 @@ interface Symptom {
   name_en: string;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+// 一時的な修正: RenderのバックエンドURLを直接設定
+const API_URL = import.meta.env.VITE_API_URL || 'https://dermaai-backend.onrender.com';
 
 export default function ImageDiagnosisPage() {
   const [image, setImage] = useState<string | null>(null);
@@ -24,6 +25,7 @@ export default function ImageDiagnosisPage() {
   const [selectedSymptomIds, setSelectedSymptomIds] = useState<string[]>([]);
   const [allSymptoms, setAllSymptoms] = useState<Symptom[]>([]);
   const [selectedDisease, setSelectedDisease] = useState<any | null>(null);
+  const [backendStatus, setBackendStatus] = useState<string>('未確認');
 
   const resultsRef = useRef<HTMLDivElement>(null);
 
@@ -35,6 +37,23 @@ export default function ImageDiagnosisPage() {
 
   useEffect(() => {
     diseaseService.getSymptoms().then(setAllSymptoms);
+    
+    // バックエンドの接続テスト
+    const testBackendConnection = async () => {
+      try {
+        const response = await fetch(`${API_URL}/health`);
+        if (response.ok) {
+          setBackendStatus('接続OK');
+        } else {
+          setBackendStatus(`エラー: ${response.status}`);
+        }
+      } catch (error) {
+        setBackendStatus('接続失敗');
+        console.error('Backend connection test failed:', error);
+      }
+    };
+    
+    testBackendConnection();
   }, []);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,17 +83,25 @@ export default function ImageDiagnosisPage() {
     setOriginalDiagnosisResult(null);
 
     try {
+      console.log('API URL:', API_URL);
       const response = await fetch(`${API_URL}/predict_image`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image: image }),
       });
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error:', response.status, errorText);
+        throw new Error(`API Error: ${response.status} - ${errorText}`);
+      }
+      
       const data = await response.json();
       setOriginalDiagnosisResult(data.results);
       setDiagnosisResult(data.results);
     } catch (error) {
       console.error("Diagnosis failed:", error);
+      alert(`診断に失敗しました: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -139,6 +166,16 @@ export default function ImageDiagnosisPage() {
             <div>
               <h2 className="text-3xl font-bold text-gray-900">画像診断</h2>
               <p className="mt-2 text-gray-600">AIを使用して皮膚の状態を分析します。画像をアップロードするか、カメラで撮影してください。</p>
+              <p className="mt-2 text-xs text-gray-500">API URL: {API_URL}</p>
+              <p className="mt-1 text-xs text-gray-500">バックエンド状態: 
+                <span className={`ml-1 font-semibold ${
+                  backendStatus === '接続OK' ? 'text-green-600' : 
+                  backendStatus === '接続失敗' ? 'text-red-600' : 
+                  'text-yellow-600'
+                }`}>
+                  {backendStatus}
+                </span>
+              </p>
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
