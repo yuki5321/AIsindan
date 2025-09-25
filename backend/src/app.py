@@ -5,8 +5,12 @@ import io
 import base64
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from tensorflow.keras.models import load_model
-from PIL import Image
+# Defer TensorFlow import to runtime to reduce boot failures on Render
+from PIL import Image, ImageFile
+import re
+
+# Allow loading partially truncated images instead of crashing
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 from supabase import create_client, Client
 from dotenv import load_dotenv
 
@@ -16,8 +20,25 @@ load_dotenv(dotenv_path=dotenv_path)
 
 app = Flask(__name__)
 
-# Temporarily allow all origins for debugging CORS
-CORS(app, resources={r"/*": {"origins": "*"}})
+# CORS settings
+# Allow specific frontend origin if provided; fallback to wildcard
+FRONTEND_ORIGIN = os.environ.get("FRONTEND_ORIGIN")
+CORS(
+    app,
+    resources={r"/*": {"origins": FRONTEND_ORIGIN or "*"}},
+    supports_credentials=False,
+    allow_headers=["Content-Type"],
+    methods=["GET", "POST", "OPTIONS"]
+)
+
+# Ensure CORS headers are present even on error responses (e.g., 404)
+@app.after_request
+def apply_cors_headers(response):
+    origin = FRONTEND_ORIGIN or "*"
+    response.headers.setdefault("Access-Control-Allow-Origin", origin)
+    response.headers.setdefault("Access-Control-Allow-Headers", "Content-Type")
+    response.headers.setdefault("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+    return response
 
 # Supabase client initialization
 supabase_url = os.environ.get("SUPABASE_URL")
@@ -28,9 +49,19 @@ if not supabase_url or not supabase_key:
 
 supabase: Client = create_client(supabase_url, supabase_key)
 
-# Load the trained image model
+# Lazy-load the trained image model to avoid slow startup on Render
+model = None
 model_path = os.path.join(os.path.dirname(__file__), '..', 'models', 'derma_mnist_model.h5')
-model = load_model(model_path)
+
+def get_model():
+    global model
+    if model is None:
+        # Import TensorFlow lazily to avoid heavy startup
+        from tensorflow.keras.models import load_model as _load_model
+        # Load once at first actual use
+        loaded = _load_model(model_path)
+        model = loaded
+    return model
 
 # This mapping is now used to query the database
 # The order MUST match the model's training output order.
@@ -77,22 +108,45 @@ def health():
         'endpoints': ['/predict_image', '/refine_diagnosis']
     })
 
-@app.route('/predict_image', methods=['POST'])
+@app.route('/predict_image', methods=['POST', 'OPTIONS'])
 def predict_image():
-    data = request.get_json()
-    if 'image' not in data:
-        return jsonify({'error': 'No image provided'}), 400
+    if request.method == 'OPTIONS':
+        return ("", 204)
+    data = request.get_json(silent=True) or {}
+    image_field = data.get('image')
+    if not image_field or not isinstance(image_field, str):
+        return jsonify({'error': 'No image provided or invalid format'}), 400
     
     try:
         # Decode and preprocess the image
-        image_data = data['image'].split(',')[1]
-        image = Image.open(io.BytesIO(base64.b64decode(image_data))).convert('RGB')
+        # Accept both Data URL (data:image/...;base64,XXXXX) and raw base64
+        mime_type = None
+        if image_field.startswith('data:'):
+            # data URL case: data:image/png;base64,XXXX
+            header, base64_part = image_field.split(',', 1)
+            m = re.match(r'data:([^;]+);base64', header)
+            if m:
+                mime_type = m.group(1).lower()
+        else:
+            base64_part = image_field
+
+        # Basic mime-type allow list if provided
+        if mime_type and mime_type not in ('image/png', 'image/jpeg', 'image/jpg'):
+            return jsonify({'error': f'Unsupported image mime type: {mime_type}'}), 415
+
+        decoded_bytes = base64.b64decode(base64_part, validate=True)
+
+        # Reject overly large payloads (e.g., > 5MB) to avoid timeouts
+        if len(decoded_bytes) > 5 * 1024 * 1024:
+            return jsonify({'error': 'Image too large. Please upload a smaller image.'}), 413
+
+        image = Image.open(io.BytesIO(decoded_bytes)).convert('RGB')
         image = image.resize((28, 28))
         img_array = np.array(image) / 255.0
         img_array = np.expand_dims(img_array, axis=0)
 
         # Make prediction
-        prediction = model.predict(img_array)[0]
+        prediction = get_model().predict(img_array)[0]
         
         # Get top 5 predictions
         top_k = 5
@@ -105,7 +159,7 @@ def predict_image():
 
             if disease_name_en:
                 # Fetch disease details from Supabase
-                db_response = supabase.from_('diseases').select('name, name_en, overview').eq('name_en', disease_name_en).single().execute()
+                db_response = supabase.from_('diseases').select('id, name, name_en, overview').eq('name_en', disease_name_en).single().execute()
                 if db_response.data:
                     disease_info = db_response.data
                     results.append({
@@ -115,17 +169,20 @@ def predict_image():
                 else:
                     # Fallback if not in DB
                     results.append({
-                        'disease': {'name': disease_name_en, 'name_en': disease_name_en, 'overview': 'No details in DB'},
+                        'disease': {'id': None, 'name': disease_name_en, 'name_en': disease_name_en, 'overview': 'No details in DB'},
                         'confidence': confidence
                     })
 
         return jsonify({'results': results})
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        # Fail gracefully with 400 for bad image payloads
+        return jsonify({'error': f'Invalid image payload: {e}'}), 400
 
-@app.route('/refine_diagnosis', methods=['POST'])
+@app.route('/refine_diagnosis', methods=['POST', 'OPTIONS'])
 def refine_diagnosis():
+    if request.method == 'OPTIONS':
+        return ("", 204)
     data = request.get_json()
     initial_results = data.get('initial_results')
     selected_symptoms = data.get('symptoms')
