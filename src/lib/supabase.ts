@@ -164,12 +164,7 @@ export interface SearchFilters {
   genderPreference?: string;
 }
 
-// Check if Supabase is properly configured
-export function isSupabaseConfigured(): boolean {
-  return !!(supabaseUrl && supabaseAnonKey && 
-           supabaseUrl !== 'undefined' && supabaseAnonKey !== 'undefined' &&
-           isValidUrl(supabaseUrl) && supabaseAnonKey !== 'placeholder-key');
-}
+
 
 // データベース接続テスト関数
 export async function testDatabaseConnection(): Promise<boolean> {
