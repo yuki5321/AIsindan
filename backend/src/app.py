@@ -16,9 +16,8 @@ load_dotenv(dotenv_path=dotenv_path)
 
 app = Flask(__name__)
 
-# Allow requests from the frontend URL, with a fallback for local development
-frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:5173")
-CORS(app, resources={r"/*": {"origins": [frontend_url]}})
+# Temporarily allow all origins for debugging CORS
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Supabase client initialization
 supabase_url = os.environ.get("SUPABASE_URL")
