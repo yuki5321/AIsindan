@@ -82,8 +82,8 @@ def load_disease_symptom_map():
     """Loads the mapping between diseases and symptoms from the database."""
     global disease_symptom_map
     try:
-        # Fetch all disease-symptom relationships
-        response = supabase.from_('disease_symptoms').select('diseases(name_en), symptoms(name_en)').execute()
+        # Fetch all disease-symptom relationships with proper joins
+        response = supabase.from_('disease_symptoms').select('disease_id, symptom_id, diseases!inner(name_en), symptoms!inner(name_en)').execute()
         if response.data:
             for item in response.data:
                 if item.get('diseases') and item.get('symptoms'):
@@ -92,7 +92,9 @@ def load_disease_symptom_map():
                     if disease_name not in disease_symptom_map:
                         disease_symptom_map[disease_name] = []
                     disease_symptom_map[disease_name].append(symptom_name)
-        print("Successfully loaded disease-symptom map.")
+        print(f"Successfully loaded disease-symptom map with {len(disease_symptom_map)} diseases.")
+        for disease, symptoms in disease_symptom_map.items():
+            print(f"  {disease}: {symptoms}")
     except Exception as e:
         print(f"Error loading disease-symptom map: {e}")
 
