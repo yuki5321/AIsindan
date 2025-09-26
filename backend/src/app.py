@@ -190,25 +190,70 @@ def refine_diagnosis():
     if not initial_results or not selected_symptoms:
         return jsonify({'error': 'Initial results and symptoms are required'}), 400
 
-    boost_factor = 0.1
+    # Ensure disease-symptom map is populated (gunicornでは __main__ が呼ばれないため)
+    if not disease_symptom_map:
+        try:
+            load_disease_symptom_map()
+        except Exception as _:
+            # 失敗しても動作は継続（ブーストは掛からない）
+            pass
+
+    # Tuning parameters for visible impact
+    boost_factor = 0.25
     refined_results = []
+
+    # Normalize selected symptom names for robust matching
+    def normalize_name(name: str) -> str:
+        # lower, trim, replace spaces with underscore, drop non-alnum/underscore
+        raw = (name or "").strip().lower().replace(" ", "_")
+        return re.sub(r"[^a-z0-9_]", "", raw)
+
+    # Minimal synonyms to improve matching between UI terms and DB terms
+    SYMPTOM_SYNONYMS = {
+        "itching": {"pruritus"},
+        "dryness": {"xerosis", "dry_skin"},
+        "irregular_border": {"irregular_borders", "irregular_margins"},
+        "scaling": {"desquamation", "scale", "scaly_skin"},
+    }
+
+    normalized_selected = {normalize_name(s) for s in selected_symptoms}
 
     for result in initial_results:
         # The 'disease' object now comes from the DB
         disease_obj = result['disease']
-        disease_name_en = disease_obj['name_en']
+        disease_name_en = disease_obj.get('name_en') or disease_obj.get('name_en'.upper())
         new_confidence = result['confidence']
         
         associated_symptoms = disease_symptom_map.get(disease_name_en, [])
-        match_count = len(set(associated_symptoms) & set(selected_symptoms))
+        normalized_assoc = {normalize_name(s) for s in associated_symptoms}
+        # Expand selected with synonyms
+        expanded_selected = set(normalized_selected)
+        for s in list(normalized_selected):
+            expanded_selected |= SYMPTOM_SYNONYMS.get(s, set())
+        match_count = len(normalized_assoc & expanded_selected)
+        
+        # Debug logging
+        print(f"DEBUG: Disease={disease_name_en}")
+        print(f"DEBUG: Associated symptoms={associated_symptoms}")
+        print(f"DEBUG: Normalized associated={normalized_assoc}")
+        print(f"DEBUG: Selected symptoms={selected_symptoms}")
+        print(f"DEBUG: Normalized selected={normalized_selected}")
+        print(f"DEBUG: Expanded selected={expanded_selected}")
+        print(f"DEBUG: Match count={match_count}")
+        print(f"DEBUG: Original confidence={result['confidence']}, New confidence={new_confidence}")
         
         if match_count > 0:
             new_confidence += match_count * boost_factor
         
         refined_results.append({
             'disease': disease_obj,
-            'confidence': min(new_confidence, 1.0)
+            'confidence': max(0.0, min(new_confidence, 1.0))
         })
+
+    # Renormalize so that confidences sum to 1.0 for clearer UI changes
+    total = sum(item['confidence'] for item in refined_results) or 1.0
+    for item in refined_results:
+        item['confidence'] = item['confidence'] / total
 
     refined_results.sort(key=lambda x: x['confidence'], reverse=True)
 
